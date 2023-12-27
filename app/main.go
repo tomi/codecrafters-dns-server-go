@@ -39,6 +39,16 @@ func main() {
 		fmt.Printf("Received %d bytes from %s: %s\n", size, source, receivedData)
 
 		// Create an empty response
+		questions := []dns.Question{
+			dns.Question{
+				Name: dns.DomainName{
+					Labels: []dns.Label{"codecrafters", "io"},
+				},
+				Type:  dns.TYPE_A,
+				Class: dns.CLASS_IN,
+			},
+		}
+
 		response := dns.Message{
 			Header: dns.Header{
 				ID: 1234,
@@ -57,9 +67,16 @@ func main() {
 				NSCOUNT: 0,
 				ARCOUNT: 0,
 			},
+			Questions: questions,
 		}
 
-		_, err = udpConn.WriteToUDP(response.Serialize(), source)
+		serializedResponse, err := response.Serialize()
+		if err != nil {
+			fmt.Println("Failed to serialize response:", err)
+			continue
+		}
+
+		_, err = udpConn.WriteToUDP(serializedResponse, source)
 		if err != nil {
 			fmt.Println("Failed to send response:", err)
 		}
