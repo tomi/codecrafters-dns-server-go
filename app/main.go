@@ -62,7 +62,7 @@ func main() {
 					Z:      0,
 					RCODE:  0,
 				},
-				QDCOUNT: 0,
+				QDCOUNT: 1,
 				ANCOUNT: 0,
 				NSCOUNT: 0,
 				ARCOUNT: 0,
