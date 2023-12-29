@@ -54,11 +54,10 @@ func main() {
 				Name: dns.DomainName{
 					Labels: []dns.Label{"codecrafters", "io"},
 				},
-				Type:     dns.TYPE_A,
-				Class:    dns.CLASS_IN,
-				TTL:      60,
-				RDLength: 4,
-				RData:    []byte{8, 8, 8, 8},
+				Type:  dns.TYPE_A,
+				Class: dns.CLASS_IN,
+				TTL:   60,
+				RData: []byte{8, 8, 8, 8},
 			},
 		}
 

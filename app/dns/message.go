@@ -115,12 +115,11 @@ type Question struct {
 }
 
 type ResourceRecord struct {
-	Name     DomainName
-	Type     ResourceRecordType
-	Class    ResourceRecordClass
-	TTL      uint32
-	RDLength uint16
-	RData    []byte
+	Name  DomainName
+	Type  ResourceRecordType
+	Class ResourceRecordClass
+	TTL   uint32
+	RData []byte
 }
 
 func (d *DomainName) Serialize() ([]byte, error) {
@@ -200,13 +199,14 @@ func (r *ResourceRecord) Serialize() ([]byte, error) {
 	typeSerialized := uint16ToBytes(uint16(r.Type))
 	classSerialized := uint16ToBytes(uint16(r.Class))
 	ttlSerialized := uint32ToBytes(r.TTL)
-	rdLengthSerialized := uint16ToBytes(r.RDLength)
+	rdLengthSerialized := uint16ToBytes(uint16(len(r.RData)))
 
 	buf = append(buf, domainNameSerialized...)
 	buf = append(buf, typeSerialized...)
 	buf = append(buf, classSerialized...)
 	buf = append(buf, ttlSerialized...)
 	buf = append(buf, rdLengthSerialized...)
+	buf = append(buf, r.RData...)
 
 	return buf, nil
 }
