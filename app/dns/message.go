@@ -8,6 +8,7 @@ import (
 type Message struct {
 	Header    Header
 	Questions []Question
+	Answers   []ResourceRecord
 }
 
 type Flags struct {
@@ -113,6 +114,15 @@ type Question struct {
 	Class ResourceRecordClass
 }
 
+type ResourceRecord struct {
+	Name     DomainName
+	Type     ResourceRecordType
+	Class    ResourceRecordClass
+	TTL      uint32
+	RDLength uint16
+	RData    []byte
+}
+
 func (d *DomainName) Serialize() ([]byte, error) {
 	buf := make([]byte, 0)
 
@@ -137,6 +147,12 @@ func (d *DomainName) Serialize() ([]byte, error) {
 func uint16ToBytes(value uint16) []byte {
 	buf := make([]byte, 2)
 	binary.BigEndian.PutUint16(buf, value)
+	return buf
+}
+
+func uint32ToBytes(value uint32) []byte {
+	buf := make([]byte, 4)
+	binary.BigEndian.PutUint32(buf, value)
 	return buf
 }
 
@@ -173,6 +189,43 @@ func SerializeQuestions(questions []Question) ([]byte, error) {
 	return buf, nil
 }
 
+func (r *ResourceRecord) Serialize() ([]byte, error) {
+	buf := make([]byte, 0)
+
+	domainNameSerialized, err := r.Name.Serialize()
+	if err != nil {
+		return nil, err
+	}
+
+	typeSerialized := uint16ToBytes(uint16(r.Type))
+	classSerialized := uint16ToBytes(uint16(r.Class))
+	ttlSerialized := uint32ToBytes(r.TTL)
+	rdLengthSerialized := uint16ToBytes(r.RDLength)
+
+	buf = append(buf, domainNameSerialized...)
+	buf = append(buf, typeSerialized...)
+	buf = append(buf, classSerialized...)
+	buf = append(buf, ttlSerialized...)
+	buf = append(buf, rdLengthSerialized...)
+
+	return buf, nil
+}
+
+func SerializeAnswers(answers []ResourceRecord) ([]byte, error) {
+	buf := make([]byte, 0)
+
+	for _, answer := range answers {
+		answerSerialized, err := answer.Serialize()
+		if err != nil {
+			return nil, err
+		}
+
+		buf = append(buf, answerSerialized...)
+	}
+
+	return buf, nil
+}
+
 func (m *Message) Serialize() ([]byte, error) {
 	buf := make([]byte, 0)
 
@@ -182,8 +235,14 @@ func (m *Message) Serialize() ([]byte, error) {
 		return nil, err
 	}
 
+	answersSerialized, err := SerializeAnswers(m.Answers)
+	if err != nil {
+		return nil, err
+	}
+
 	buf = append(buf, headerSerialized...)
 	buf = append(buf, questionsSerialized...)
+	buf = append(buf, answersSerialized...)
 
 	return buf, nil
 }

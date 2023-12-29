@@ -40,12 +40,25 @@ func main() {
 
 		// Create an empty response
 		questions := []dns.Question{
-			dns.Question{
+			{
 				Name: dns.DomainName{
 					Labels: []dns.Label{"codecrafters", "io"},
 				},
 				Type:  dns.TYPE_A,
 				Class: dns.CLASS_IN,
+			},
+		}
+
+		answers := []dns.ResourceRecord{
+			{
+				Name: dns.DomainName{
+					Labels: []dns.Label{"codecrafters", "io"},
+				},
+				Type:     dns.TYPE_A,
+				Class:    dns.CLASS_IN,
+				TTL:      60,
+				RDLength: 4,
+				RData:    []byte{8, 8, 8, 8},
 			},
 		}
 
@@ -63,11 +76,12 @@ func main() {
 					RCODE:  0,
 				},
 				QDCOUNT: 1,
-				ANCOUNT: 0,
+				ANCOUNT: 1,
 				NSCOUNT: 0,
 				ARCOUNT: 0,
 			},
 			Questions: questions,
+			Answers:   answers,
 		}
 
 		serializedResponse, err := response.Serialize()
