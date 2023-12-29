@@ -69,6 +69,45 @@ func (h *Header) Serialize() []byte {
 	return buf
 }
 
+func DeserializeFlags(data []byte) *Flags {
+	flags := &Flags{}
+
+	flags.QR = uint16(data[0] >> 7)
+	flags.OPCODE = uint16((data[0] >> 3) & 0x0F)
+	flags.AA = uint16((data[0] >> 2) & 0x01)
+	flags.TC = uint16((data[0] >> 1) & 0x01)
+	flags.RD = uint16(data[0] & 0x01)
+
+	flags.RA = uint16(data[1] >> 7)
+	flags.Z = uint16((data[1] >> 6) & 0x01)
+	flags.RCODE = uint16(data[1] & 0x0F)
+
+	return flags
+}
+
+func DeserializeHeader(data []byte) *Header {
+	header := &Header{}
+
+	header.ID = binary.BigEndian.Uint16(data[0:])
+	header.Flags = *DeserializeFlags(data[2:])
+	header.QDCOUNT = binary.BigEndian.Uint16(data[4:])
+	header.ANCOUNT = binary.BigEndian.Uint16(data[6:])
+	header.NSCOUNT = binary.BigEndian.Uint16(data[8:])
+	header.ARCOUNT = binary.BigEndian.Uint16(data[10:])
+
+	return header
+}
+
+func DeserializeMessage(data []byte) *Message {
+	message := &Message{}
+
+	message.Header = *DeserializeHeader(data[0:12])
+	message.Questions = make([]Question, 0)
+	message.Answers = make([]ResourceRecord, 0)
+
+	return message
+}
+
 type Label string
 
 type DomainName struct {

@@ -38,6 +38,8 @@ func main() {
 		receivedData := string(buf[:size])
 		fmt.Printf("Received %d bytes from %s: %s\n", size, source, receivedData)
 
+		dnsRequest := dns.DeserializeMessage(buf[:size])
+
 		// Create an empty response
 		questions := []dns.Question{
 			{
@@ -61,18 +63,24 @@ func main() {
 			},
 		}
 
+		isValidRequest := dnsRequest.Header.Flags.OPCODE == 0
+		returnCode := uint16(0)
+		if !isValidRequest {
+			returnCode = 4
+		}
+
 		response := dns.Message{
 			Header: dns.Header{
-				ID: 1234,
+				ID: dnsRequest.Header.ID,
 				Flags: dns.Flags{
 					QR:     1,
-					OPCODE: 0,
+					OPCODE: dnsRequest.Header.Flags.OPCODE,
 					AA:     0,
 					TC:     0,
-					RD:     0,
+					RD:     dnsRequest.Header.Flags.RD,
 					RA:     0,
 					Z:      0,
-					RCODE:  0,
+					RCODE:  returnCode,
 				},
 				QDCOUNT: 1,
 				ANCOUNT: 1,
