@@ -38,7 +38,7 @@ func main() {
 		receivedData := string(buf[:size])
 		fmt.Printf("Received %d bytes from %s: %s\n", size, source, receivedData)
 
-		dnsRequest := dns.DeserializeMessage(buf[:size])
+		dnsRequest, err := dns.DeserializeMessage(buf[:size])
 
 		// Create an empty response
 		questions := []dns.Question{
@@ -64,9 +64,9 @@ func main() {
 		}
 
 		isValidRequest := dnsRequest.Header.Flags.OPCODE == 0
-		returnCode := uint16(0)
+		returnCode := dns.RCodeNoError
 		if !isValidRequest {
-			returnCode = 4
+			returnCode = dns.RCodeNotImplemented
 		}
 
 		response := dns.Message{

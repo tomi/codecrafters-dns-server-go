@@ -11,111 +11,19 @@ type Message struct {
 	Answers   []ResourceRecord
 }
 
-type Flags struct {
-	// Query/Response indicator, 1 for reply, 0 for question
-	QR bool
-	// Operation code. Specifies the kind of query in a message.
-	OPCODE uint16
-	// Authoritative Answer. 1 if the responding server "owns" the domain queried, i.e., it's authoritative.
-	AA bool
-	// Truncation. 1 if the message is larger than 512 bytes. Always 0 in UDP responses.
-	TC bool
-	// Recursion Desired. Sender sets this to 1 if the server should recursively resolve this query, 0 otherwise.
-	RD bool
-	// Recursion Available. Server sets this to 1 to indicate that recursion is available.
-	RA bool
-	// Reserved. Used by DNSSEC queries. At inception, it was reserved for future use.
-	Z uint16
-	// Response code indicating the status of the response.
-	RCODE uint16
-}
-
-func (f *Flags) Serialize() uint16 {
-	flags := uint16(0)
-	if f.QR {
-		flags |= 1 << 15
-	}
-	flags |= f.OPCODE << 11
-	if f.AA {
-		flags |= 1 << 10
-	}
-	if f.TC {
-		flags |= 1 << 9
-	}
-	if f.RD {
-		flags |= 1 << 8
-	}
-	if f.RA {
-		flags |= 1 << 7
-	}
-	flags |= f.Z << 6
-	flags |= f.RCODE
-	return flags
-}
-
-type Header struct {
-	ID    uint16
-	Flags Flags
-	// Question count
-	QDCOUNT uint16
-	// Answer record count
-	ANCOUNT uint16
-	// Authority record count
-	NSCOUNT uint16
-	// Additional record count
-	ARCOUNT uint16
-}
-
-func (h *Header) Serialize() []byte {
-	buf := make([]byte, 12)
-
-	binary.BigEndian.PutUint16(buf[0:], h.ID)
-	binary.BigEndian.PutUint16(buf[2:], h.Flags.Serialize())
-	binary.BigEndian.PutUint16(buf[4:], h.QDCOUNT)
-	binary.BigEndian.PutUint16(buf[6:], h.ANCOUNT)
-	binary.BigEndian.PutUint16(buf[8:], h.NSCOUNT)
-	binary.BigEndian.PutUint16(buf[10:], h.ARCOUNT)
-
-	return buf
-}
-
-func DeserializeFlags(data []byte) *Flags {
-	flags := &Flags{}
-
-	flags.QR = bitToBool(data[0] >> 7)
-	flags.OPCODE = uint16((data[0] >> 3) & 0x0F)
-	flags.AA = bitToBool(data[0] >> 2)
-	flags.TC = bitToBool(data[0] >> 1)
-	flags.RD = bitToBool(data[0])
-
-	flags.RA = bitToBool(data[1] >> 7)
-	flags.Z = uint16(data[1] >> 6)
-	flags.RCODE = uint16(data[1] & 0x0F)
-
-	return flags
-}
-
-func DeserializeHeader(data []byte) *Header {
-	header := &Header{}
-
-	header.ID = binary.BigEndian.Uint16(data[0:])
-	header.Flags = *DeserializeFlags(data[2:])
-	header.QDCOUNT = binary.BigEndian.Uint16(data[4:])
-	header.ANCOUNT = binary.BigEndian.Uint16(data[6:])
-	header.NSCOUNT = binary.BigEndian.Uint16(data[8:])
-	header.ARCOUNT = binary.BigEndian.Uint16(data[10:])
-
-	return header
-}
-
-func DeserializeMessage(data []byte) *Message {
+func DeserializeMessage(data []byte) (*Message, error) {
 	message := &Message{}
 
-	message.Header = *DeserializeHeader(data[0:12])
+	header, err := DeserializeHeader(data[0:12])
+	if err != nil {
+		return nil, err
+	}
+
+	message.Header = *header
 	message.Questions = make([]Question, 0)
 	message.Answers = make([]ResourceRecord, 0)
 
-	return message
+	return message, nil
 }
 
 type Label string
