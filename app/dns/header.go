@@ -130,7 +130,7 @@ func (h *Header) Serialize() []byte {
 	return buf
 }
 
-func DeserializeFlags(data []byte) *Flags {
+func deserializeFlags(data []byte) *Flags {
 	flags := &Flags{}
 
 	flags.QR = bitToBool(data[0] >> 7)
@@ -146,7 +146,7 @@ func DeserializeFlags(data []byte) *Flags {
 	return flags
 }
 
-func DeserializeHeader(data []byte) (*Header, error) {
+func deserializeHeader(data []byte) (*Header, error) {
 	header := &Header{}
 
 	if len(data) < 12 {
@@ -154,7 +154,7 @@ func DeserializeHeader(data []byte) (*Header, error) {
 	}
 
 	header.ID = binary.BigEndian.Uint16(data[0:])
-	header.Flags = *DeserializeFlags(data[2:])
+	header.Flags = *deserializeFlags(data[2:])
 	header.QDCOUNT = binary.BigEndian.Uint16(data[4:])
 	header.ANCOUNT = binary.BigEndian.Uint16(data[6:])
 	header.NSCOUNT = binary.BigEndian.Uint16(data[8:])

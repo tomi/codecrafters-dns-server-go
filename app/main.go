@@ -66,22 +66,9 @@ func main() {
 			continue
 		}
 
-		// Create an empty response
-		questions := []dns.Question{
-			{
-				Name: dns.DomainName{
-					Labels: []dns.Label{"codecrafters", "io"},
-				},
-				Type:  dns.TYPE_A,
-				Class: dns.CLASS_IN,
-			},
-		}
-
 		answers := []dns.ResourceRecord{
 			{
-				Name: dns.DomainName{
-					Labels: []dns.Label{"codecrafters", "io"},
-				},
+				Name:  dnsRequest.Questions[0].Name,
 				Type:  dns.TYPE_A,
 				Class: dns.CLASS_IN,
 				TTL:   60,
@@ -113,7 +100,7 @@ func main() {
 				NSCOUNT: 0,
 				ARCOUNT: 0,
 			},
-			Questions: questions,
+			Questions: dnsRequest.Questions,
 			Answers:   answers,
 		}
 

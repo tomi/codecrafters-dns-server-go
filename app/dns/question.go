@@ -54,3 +54,47 @@ func serializeQuestions(questions []Question) ([]byte, error) {
 
 	return buf, nil
 }
+
+func deserializeQuestion(buf []byte) (int, *Question, error) {
+	bytesRead, domainName, err := deserializeDomainName(buf)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	qtypeStart := bytesRead
+	maybeQtype, err := uint16FromBytes(buf[qtypeStart : qtypeStart+2])
+	if err != nil {
+		return 0, nil, err
+	}
+	qtype := ResourceRecordType(maybeQtype)
+
+	qclassStart := qtypeStart + 2
+	maybeQclass, err := uint16FromBytes(buf[qclassStart : qclassStart+2])
+	if err != nil {
+		return 0, nil, err
+	}
+	qclass := ResourceRecordClass(maybeQclass)
+
+	return bytesRead + 4, &Question{
+		Name:  *domainName,
+		Type:  qtype,
+		Class: qclass,
+	}, nil
+}
+
+func deserializeQuestions(buf []byte, count uint16) ([]Question, error) {
+	offset := 0
+	questions := make([]Question, 0)
+
+	for i := uint16(0); i < count; i++ {
+		bytesRead, question, err := deserializeQuestion(buf[offset:])
+		if err != nil {
+			return nil, err
+		}
+
+		offset += bytesRead
+		questions = append(questions, *question)
+	}
+
+	return questions, nil
+}

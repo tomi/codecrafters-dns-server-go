@@ -9,13 +9,18 @@ type Message struct {
 func DeserializeMessage(data []byte) (*Message, error) {
 	message := &Message{}
 
-	header, err := DeserializeHeader(data[0:12])
+	header, err := deserializeHeader(data[0:12])
+	if err != nil {
+		return nil, err
+	}
+
+	questions, err := deserializeQuestions(data[12:], header.QDCOUNT)
 	if err != nil {
 		return nil, err
 	}
 
 	message.Header = *header
-	message.Questions = make([]Question, 0)
+	message.Questions = questions
 	message.Answers = make([]ResourceRecord, 0)
 
 	return message, nil
