@@ -12,32 +12,42 @@ type Message struct {
 }
 
 type Flags struct {
-	// Query/Response indicator, 4 bits
-	QR uint16
-	// Operation code
+	// Query/Response indicator, 1 for reply, 0 for question
+	QR bool
+	// Operation code. Specifies the kind of query in a message.
 	OPCODE uint16
-	// Authoritative Answer
-	AA uint16
-	// Truncation
-	TC uint16
-	// Recursion Desired
-	RD uint16
-	// Recursion Available
-	RA uint16
-	// Reserved
+	// Authoritative Answer. 1 if the responding server "owns" the domain queried, i.e., it's authoritative.
+	AA bool
+	// Truncation. 1 if the message is larger than 512 bytes. Always 0 in UDP responses.
+	TC bool
+	// Recursion Desired. Sender sets this to 1 if the server should recursively resolve this query, 0 otherwise.
+	RD bool
+	// Recursion Available. Server sets this to 1 to indicate that recursion is available.
+	RA bool
+	// Reserved. Used by DNSSEC queries. At inception, it was reserved for future use.
 	Z uint16
-	// Response code, 4 bits
+	// Response code indicating the status of the response.
 	RCODE uint16
 }
 
 func (f *Flags) Serialize() uint16 {
 	flags := uint16(0)
-	flags |= f.QR << 15
+	if f.QR {
+		flags |= 1 << 15
+	}
 	flags |= f.OPCODE << 11
-	flags |= f.AA << 10
-	flags |= f.TC << 9
-	flags |= f.RD << 8
-	flags |= f.RA << 7
+	if f.AA {
+		flags |= 1 << 10
+	}
+	if f.TC {
+		flags |= 1 << 9
+	}
+	if f.RD {
+		flags |= 1 << 8
+	}
+	if f.RA {
+		flags |= 1 << 7
+	}
 	flags |= f.Z << 6
 	flags |= f.RCODE
 	return flags
@@ -72,14 +82,14 @@ func (h *Header) Serialize() []byte {
 func DeserializeFlags(data []byte) *Flags {
 	flags := &Flags{}
 
-	flags.QR = uint16(data[0] >> 7)
+	flags.QR = bitToBool(data[0] >> 7)
 	flags.OPCODE = uint16((data[0] >> 3) & 0x0F)
-	flags.AA = uint16((data[0] >> 2) & 0x01)
-	flags.TC = uint16((data[0] >> 1) & 0x01)
-	flags.RD = uint16(data[0] & 0x01)
+	flags.AA = bitToBool(data[0] >> 2)
+	flags.TC = bitToBool(data[0] >> 1)
+	flags.RD = bitToBool(data[0])
 
-	flags.RA = uint16(data[1] >> 7)
-	flags.Z = uint16((data[1] >> 6) & 0x01)
+	flags.RA = bitToBool(data[1] >> 7)
+	flags.Z = uint16(data[1] >> 6)
 	flags.RCODE = uint16(data[1] & 0x0F)
 
 	return flags
@@ -180,6 +190,10 @@ func (d *DomainName) Serialize() ([]byte, error) {
 	buf = append(buf, 0)
 
 	return buf, nil
+}
+
+func bitToBool(bit byte) bool {
+	return bit&0x01 == 1
 }
 
 func uint16ToBytes(value uint16) []byte {

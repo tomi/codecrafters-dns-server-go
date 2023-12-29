@@ -73,12 +73,12 @@ func main() {
 			Header: dns.Header{
 				ID: dnsRequest.Header.ID,
 				Flags: dns.Flags{
-					QR:     1,
+					QR:     true,
 					OPCODE: dnsRequest.Header.Flags.OPCODE,
-					AA:     0,
-					TC:     0,
+					AA:     false,
+					TC:     false,
 					RD:     dnsRequest.Header.Flags.RD,
-					RA:     0,
+					RA:     false,
 					Z:      0,
 					RCODE:  returnCode,
 				},
