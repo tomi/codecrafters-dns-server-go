@@ -39,6 +39,32 @@ func main() {
 		fmt.Printf("Received %d bytes from %s: %s\n", size, source, receivedData)
 
 		dnsRequest, err := dns.DeserializeMessage(buf[:size])
+		if err != nil {
+			fmt.Println("Failed to deserialize request:", err)
+			response := dns.Message{
+				Header: dns.Header{
+					ID: dnsRequest.Header.ID,
+					Flags: dns.Flags{
+						QR:     true,
+						OPCODE: dnsRequest.Header.Flags.OPCODE,
+						AA:     false,
+						TC:     false,
+						RD:     dnsRequest.Header.Flags.RD,
+						RA:     false,
+						Z:      0,
+						RCODE:  dns.RCodeFormatError,
+					},
+					QDCOUNT: 0,
+					ANCOUNT: 0,
+					NSCOUNT: 0,
+					ARCOUNT: 0,
+				},
+			}
+
+			respondWithMessage(udpConn, source, &response)
+
+			continue
+		}
 
 		// Create an empty response
 		questions := []dns.Question{
@@ -91,15 +117,20 @@ func main() {
 			Answers:   answers,
 		}
 
-		serializedResponse, err := response.Serialize()
-		if err != nil {
-			fmt.Println("Failed to serialize response:", err)
-			continue
-		}
-
-		_, err = udpConn.WriteToUDP(serializedResponse, source)
-		if err != nil {
-			fmt.Println("Failed to send response:", err)
-		}
+		respondWithMessage(udpConn, source, &response)
 	}
+}
+
+func respondWithMessage(udpConn *net.UDPConn, source *net.UDPAddr, message *dns.Message) {
+	serializedResponse, err := message.Serialize()
+	if err != nil {
+		fmt.Println("Failed to serialize response:", err)
+		return
+	}
+
+	_, err = udpConn.WriteToUDP(serializedResponse, source)
+	if err != nil {
+		fmt.Println("Failed to send response:", err)
+	}
+
 }
