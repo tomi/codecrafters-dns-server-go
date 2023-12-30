@@ -11,6 +11,22 @@ func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
 
+	useForwardingResolver, resolverAddress := tryParseResolverArg()
+
+	var resolver dns.DnsResolver
+	var err error
+	if useForwardingResolver {
+		fmt.Println("Using forwarding resolver:", resolverAddress)
+		resolver, err = dns.InitForwardingResolver(resolverAddress)
+	} else {
+		resolver, err = dns.InitInternalResolver()
+	}
+
+	if err != nil {
+		fmt.Println("Failed to initialize resolver:", err)
+		return
+	}
+
 	// Uncomment this block to pass the first stage
 	//
 	udpAddr, err := net.ResolveUDPAddr("udp", "127.0.0.1:2053")
@@ -73,50 +89,8 @@ func main() {
 			continue
 		}
 
-		answers := make([]dns.ResourceRecord, 0)
-		for _, question := range dnsRequest.Questions {
-			answer := []dns.ResourceRecord{
-				{
-					Name:  question.Name,
-					Type:  dns.TYPE_A,
-					Class: dns.CLASS_IN,
-					TTL:   60,
-					RData: []byte{8, 8, 8, 8},
-				},
-			}
-
-			answers = append(answers, answer...)
-		}
-
-		isValidRequest := dnsRequest.Header.Flags.OPCODE == 0
-		returnCode := dns.RCodeNoError
-		if !isValidRequest {
-			returnCode = dns.RCodeNotImplemented
-		}
-
-		response := dns.Message{
-			Header: dns.Header{
-				ID: dnsRequest.Header.ID,
-				Flags: dns.Flags{
-					QR:     true,
-					OPCODE: dnsRequest.Header.Flags.OPCODE,
-					AA:     false,
-					TC:     false,
-					RD:     dnsRequest.Header.Flags.RD,
-					RA:     false,
-					Z:      0,
-					RCODE:  returnCode,
-				},
-				QDCOUNT: uint16(len(dnsRequest.Questions)),
-				ANCOUNT: uint16(len(answers)),
-				NSCOUNT: 0,
-				ARCOUNT: 0,
-			},
-			Questions: dnsRequest.Questions,
-			Answers:   answers,
-		}
-
-		respondWithMessage(udpConn, source, &response)
+		response := resolver.Resolve(dnsRequest)
+		respondWithMessage(udpConn, source, response)
 	}
 }
 

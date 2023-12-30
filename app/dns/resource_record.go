@@ -96,3 +96,85 @@ func (r *ResourceRecord) Serialize() ([]byte, error) {
 
 	return buf, nil
 }
+
+func deserializeResourceRecord(buf []byte, offset int) (int, *ResourceRecord, error) {
+	bytesRead, domainName, err := deserializeDomainName(buf, offset)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	typeBytesRead, rrType, err := deserializeType(buf, offset+bytesRead)
+	if err != nil {
+		return 0, nil, err
+	}
+	bytesRead += typeBytesRead
+
+	classBytesRead, rrClass, err := deserializeClass(buf, offset+bytesRead)
+	if err != nil {
+		return 0, nil, err
+	}
+	bytesRead += classBytesRead
+
+	ttlBytesRead, ttl, err := deserializeTtl(buf, offset+bytesRead)
+	if err != nil {
+		return 0, nil, err
+	}
+	bytesRead += ttlBytesRead
+
+	rdLengthBytesRead, rdLength, err := deserializeRdLength(buf, offset+bytesRead)
+	if err != nil {
+		return 0, nil, err
+	}
+	bytesRead += rdLengthBytesRead
+
+	rData := buf[offset+bytesRead : offset+bytesRead+int(rdLength)]
+	bytesRead += int(rdLength)
+
+	return bytesRead, &ResourceRecord{
+		Name:  *domainName,
+		Type:  rrType,
+		Class: rrClass,
+		TTL:   ttl,
+		RData: rData,
+	}, nil
+}
+
+func deserializeType(buf []byte, offset int) (int, ResourceRecordType, error) {
+	maybeType, err := uint16FromBytes(buf[offset : offset+2])
+	if err != nil {
+		return 0, 0, err
+	}
+	rrType := ResourceRecordType(maybeType)
+
+	return 2, rrType, nil
+}
+
+func deserializeClass(buf []byte, offset int) (int, ResourceRecordClass, error) {
+	maybeClass, err := uint16FromBytes(buf[offset : offset+2])
+	if err != nil {
+		return 0, 0, err
+	}
+	rrClass := ResourceRecordClass(maybeClass)
+
+	return 2, rrClass, nil
+}
+
+func deserializeTtl(buf []byte, offset int) (int, uint32, error) {
+	maybeTtl, err := uint32FromBytes(buf[offset : offset+4])
+	if err != nil {
+		return 0, 0, err
+	}
+	ttl := uint32(maybeTtl)
+
+	return 4, ttl, nil
+}
+
+func deserializeRdLength(buf []byte, offset int) (int, uint16, error) {
+	maybeRdLength, err := uint16FromBytes(buf[offset : offset+2])
+	if err != nil {
+		return 0, 0, err
+	}
+	rdLength := uint16(maybeRdLength)
+
+	return 2, rdLength, nil
+}

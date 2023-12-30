@@ -14,14 +14,19 @@ func DeserializeMessage(data []byte) (*Message, error) {
 		return nil, err
 	}
 
-	questions, err := deserializeQuestions(data, 12, header.QDCOUNT)
+	bytesRead, questions, err := deserializeQuestions(data, 12, header.QDCOUNT)
+	if err != nil {
+		return nil, err
+	}
+
+	answers, err := deserializeAnswers(data, 12+bytesRead, header.ANCOUNT)
 	if err != nil {
 		return nil, err
 	}
 
 	message.Header = *header
 	message.Questions = questions
-	message.Answers = make([]ResourceRecord, 0)
+	message.Answers = answers
 
 	return message, nil
 }

@@ -28,3 +28,11 @@ func uint16FromBytes(buf []byte) (uint16, error) {
 
 	return binary.BigEndian.Uint16(buf), nil
 }
+
+func uint32FromBytes(buf []byte) (uint32, error) {
+	if len(buf) != 4 {
+		return 0, fmt.Errorf("expected 4 bytes, got %d", len(buf))
+	}
+
+	return binary.BigEndian.Uint32(buf), nil
+}

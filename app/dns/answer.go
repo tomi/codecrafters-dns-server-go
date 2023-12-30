@@ -14,3 +14,19 @@ func serializeAnswers(answers []ResourceRecord) ([]byte, error) {
 
 	return buf, nil
 }
+
+func deserializeAnswers(buf []byte, offset int, count uint16) ([]ResourceRecord, error) {
+	answers := make([]ResourceRecord, 0)
+
+	for i := uint16(0); i < count; i++ {
+		bytesRead, answer, err := deserializeResourceRecord(buf, offset)
+		if err != nil {
+			return nil, err
+		}
+
+		offset += bytesRead
+		answers = append(answers, *answer)
+	}
+
+	return answers, nil
+}
