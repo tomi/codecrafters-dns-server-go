@@ -14,7 +14,7 @@ func DeserializeMessage(data []byte) (*Message, error) {
 		return nil, err
 	}
 
-	questions, err := deserializeQuestions(data[12:], header.QDCOUNT)
+	questions, err := deserializeQuestions(data, 12, header.QDCOUNT)
 	if err != nil {
 		return nil, err
 	}

@@ -38,6 +38,13 @@ func main() {
 		receivedData := string(buf[:size])
 		fmt.Printf("Received %d bytes from %s: %s\n", size, source, receivedData)
 
+		// Print the received data as decimal bytes
+		fmt.Println("\n")
+		for i := 0; i < size; i++ {
+			fmt.Printf("%d ", buf[i])
+		}
+		fmt.Println("\n")
+
 		dnsRequest, err := dns.DeserializeMessage(buf[:size])
 		if err != nil {
 			fmt.Println("Failed to deserialize request:", err)
@@ -66,14 +73,19 @@ func main() {
 			continue
 		}
 
-		answers := []dns.ResourceRecord{
-			{
-				Name:  dnsRequest.Questions[0].Name,
-				Type:  dns.TYPE_A,
-				Class: dns.CLASS_IN,
-				TTL:   60,
-				RData: []byte{8, 8, 8, 8},
-			},
+		answers := make([]dns.ResourceRecord, 0)
+		for _, question := range dnsRequest.Questions {
+			answer := []dns.ResourceRecord{
+				{
+					Name:  question.Name,
+					Type:  dns.TYPE_A,
+					Class: dns.CLASS_IN,
+					TTL:   60,
+					RData: []byte{8, 8, 8, 8},
+				},
+			}
+
+			answers = append(answers, answer...)
 		}
 
 		isValidRequest := dnsRequest.Header.Flags.OPCODE == 0
@@ -95,8 +107,8 @@ func main() {
 					Z:      0,
 					RCODE:  returnCode,
 				},
-				QDCOUNT: 1,
-				ANCOUNT: 1,
+				QDCOUNT: uint16(len(dnsRequest.Questions)),
+				ANCOUNT: uint16(len(answers)),
 				NSCOUNT: 0,
 				ARCOUNT: 0,
 			},

@@ -55,13 +55,13 @@ func serializeQuestions(questions []Question) ([]byte, error) {
 	return buf, nil
 }
 
-func deserializeQuestion(buf []byte) (int, *Question, error) {
-	bytesRead, domainName, err := deserializeDomainName(buf)
+func deserializeQuestion(buf []byte, offset int) (int, *Question, error) {
+	bytesRead, domainName, err := deserializeDomainName(buf, offset)
 	if err != nil {
 		return 0, nil, err
 	}
 
-	qtypeStart := bytesRead
+	qtypeStart := offset + bytesRead
 	maybeQtype, err := uint16FromBytes(buf[qtypeStart : qtypeStart+2])
 	if err != nil {
 		return 0, nil, err
@@ -82,12 +82,11 @@ func deserializeQuestion(buf []byte) (int, *Question, error) {
 	}, nil
 }
 
-func deserializeQuestions(buf []byte, count uint16) ([]Question, error) {
-	offset := 0
+func deserializeQuestions(buf []byte, offset int, count uint16) ([]Question, error) {
 	questions := make([]Question, 0)
 
 	for i := uint16(0); i < count; i++ {
-		bytesRead, question, err := deserializeQuestion(buf[offset:])
+		bytesRead, question, err := deserializeQuestion(buf, offset)
 		if err != nil {
 			return nil, err
 		}
